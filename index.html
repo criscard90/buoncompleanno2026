@@ -537,11 +537,24 @@
         endScreen.classList.add("visible");
     }
     
+    function goFullscreen() {
+        const el = document.documentElement;
+        const req = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
+        if (!req) return; // Fullscreen non supportato (es. iOS): si prosegue normalmente
+        try {
+            const result = req.call(el, { navigationUI: "hide" });
+            if (result && typeof result.catch === "function") result.catch(() => {});
+        } catch (e) { /* ignora eventuali rifiuti del browser */ }
+    }
+    
     async function startPresentation() {
         if (started) return;
         started = true;
         
-        // Avvia la registrazione dello schermo (compare il dialogo del browser).
+        // 1) Tutto schermo (deve essere chiamato durante il gesto del click)
+        goFullscreen();
+        
+        // 2) Avvia la registrazione dello schermo (compare il dialogo del browser).
         // Se annulli o non è supportata, la presentazione parte comunque senza video.
         await startRecording();
         
