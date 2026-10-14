@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buon Compleanno ❤️</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        /* Sfondo con gradient */
+        #background {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background: radial-gradient(circle, rgba(232, 137, 28, 1) 0%, rgba(64, 22, 4, 1) 100%);
+            z-index: -1;
+        }
+        
+        body {
+            overflow: hidden;
+            font-family: "Georgia", serif;
+            color: #f5f0e6;
+        }
+        
+        /* SLIDESHOW CONTAINER: gestisce il fade e nasconde l'overflow dello zoom */
+        .slideshow {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            /* Rimosso background-size e background-position */
+            /* AGGIUNTO filter alla transizione per l'effetto blur */
+            transition: opacity 2s ease-in-out, filter 2s ease-in-out; 
+            filter: brightness(0.85);
+            overflow: hidden; /* **CRUCIALE per l'effetto Ken Burns** */
+        }
+
+        /* CLASSE AGGIUNTA: Attiva BLUR e scurisce durante il fade-out */
+        .slideshow.transitioning {
+            filter: brightness(0.7) blur(10px); 
+        }
+
+        /* EFFETTO ZOOM-OUT AGGIUNTO al Ken Burns Layer */
+        .slideshow.transitioning #kenburns-layer {
+            transform: scale(0.98); /* Zoom out leggero */
+            transition: transform 2s ease-in-out; /* Applica transizione LENTA al transform */
+        }
+        
+        /* KEN BURNS LAYER: gestisce l'immagine e l'animazione */
+        #kenburns-layer {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background-size: cover;
+            background-position: center;
+            /* Inizialmente non trasformato */
+            transform: scale(1);
+            transition: transform 0s; /* Assicura un reset istantaneo della trasformazione */
+        }
+        
+        /* Keyframes per l'Effetto Ken Burns (Zoom/Pan) */
+        @keyframes kb-zoom-in {
+            0% { transform: scale(1.0); transform-origin: 50% 50%; }
+            100% { transform: scale(1.15); transform-origin: 50% 50%; }
+        }
+        
+        @keyframes kb-pan-up-right {
+            0% { transform: scale(1.15) translate(0, 0); transform-origin: 50% 50%; }
+            100% { transform: scale(1.25) translate(3%, -3%); transform-origin: 50% 50%; }
+        }
+        
+        @keyframes kb-zoom-out-down-left {
+            0% { transform: scale(1.2) translate(3%, -3%); transform-origin: 50% 50%; }
+            100% { transform: scale(1.05) translate(-3%, 3%); transform-origin: 50% 50%; }
+        }
+        
+        /* 4. Panoramica Lenta da Sinistra a Destra */
+        @keyframes kb-pan-left-right {
+            0% { 
+                transform: scale(1.15) translate(5%, 0); 
+                transform-origin: 50% 50%; /* Parte zoomando leggermente e posizionato a sinistra */
+            }
+            100% { 
+                transform: scale(1.15) translate(-5%, 0); 
+                transform-origin: 50% 50%; /* Arriva a destra mantenendo lo stesso zoom */
+            }
+        }
+        
+        /* 5. Zoom In focalizzato sull'Angolo Basso Destro */
+        @keyframes kb-zoom-in-bottom-right {
+            0% { 
+                transform: scale(1.0); 
+                transform-origin: 100% 100%; /* Inizia senza zoom, focalizzato in basso a destra */
+            }
+            100% { 
+                transform: scale(1.2); 
+                transform-origin: 100% 100%; /* Zooma verso il punto focale in basso a destra */
+            }
+        }
+        
+        /* 6. Zoom Out con Leggera Rotazione */
+        @keyframes kb-zoom-out-rotate {
+            0% { 
+                transform: scale(1.25) rotate(1deg); 
+                transform-origin: 50% 50%; /* Inizia zoomato e leggermente ruotato in senso orario */
+            }
+            100% { 
+                transform: scale(1.05) rotate(-2deg); 
+                transform-origin: 50% 50%; /* Zooma indietro e ruota leggermente in senso antiorario */
+            }
+        }
+        
+        
+        /* Classi per applicare le animazioni (Durata 10s - corrispondente a setInterval) */
+        .kb-animation-1 { animation: kb-zoom-in 10s linear forwards; }
+        .kb-animation-2 { animation: kb-pan-up-right 10s linear forwards; }
+        .kb-animation-3 { animation: kb-zoom-out-down-left 10s linear forwards; }
+        .kb-animation-4 { animation: kb-pan-left-right 10s linear forwards; }
+        .kb-animation-5 { animation: kb-zoom-in-bottom-right 10s linear forwards; }
+        .kb-animation-6 { animation: kb-zoom-out-rotate 10s linear forwards; }
+        
+        
+        .overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.35);
+        }
+        
+        .text {
+            position: absolute;
+            bottom: 18%;
+            width: 100%;
+            text-align: center;
+            font-size: 1.6rem;
+            line-height: 1.7;
+            padding: 0 12%;
+            color: #f5f0e6;
+            text-shadow: 0 0 10px rgba(0,0,0,0.4);
+            opacity: 0;
+            transition: opacity 2s ease-in-out;
+        }
+        
+        .accent {
+            color: #e8a13a;
+        }
+        
+        audio { display: none; }
+        
+        #startScreen {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background: radial-gradient(circle at center, #2a1508 0%, #140a04 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            z-index: 10;
+            transition: opacity 1s ease-in-out;
+        }
+        
+        #startButton {
+            border: 2px solid #e8a13a;
+            color: #e8a13a;
+            padding: 0.8em 1.6em;
+            background: transparent;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            transition: background 0.3s, color 0.3s;
+        }
+        
+        #startButton:hover {
+            background: #e8a13a;
+            color: #1a0d04;
+        }
+        
+        /* Schermata finale con pulsante di download del video */
+        #endScreen {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 1.2em;
+            z-index: 30;
+            pointer-events: none;
+            text-align: center;
+        }
+        
+        #endScreen.visible {
+            display: flex;
+            pointer-events: auto;
+        }
+        
+        #downloadInfo {
+            color: #f5e9d4;
+            font-size: 1rem;
+            padding: 0 10%;
+            text-shadow: 0 0 10px rgba(0,0,0,0.6);
+        }
+        
+        #downloadBtn {
+            border: 2px solid #e8a13a;
+            color: #e8a13a;
+            padding: 0.8em 1.6em;
+            background: transparent;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            transition: background 0.3s, color 0.3s;
+        }
+        
+        #downloadBtn:hover {
+            background: #e8a13a;
+            color: #1a0d04;
+        }
+        
+        @media (max-width: 768px) {
+            .text { font-size: 1.8rem; padding: 0 8%; }
+            #startButton { font-size: 1rem; padding: 0.7em 1.4em; }
+        }
+        
+        #particles {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        .particle {
+            position: absolute;
+            background: #fff;
+            opacity: 0.8;
+            pointer-events: none;
+            animation-name: float;
+            animation-timing-function: linear;
+            animation-fill-mode: forwards;
+            /* Direzione di rotazione (impostata dal JS: 1 o -1) */
+            --spin: 1;
+            /* Forma a FOGLIA applicata come maschera (scala con la dimensione dell'elemento) */
+            -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path d='M50 2 C78 28 96 40 50 98 C4 40 22 28 50 2 Z'/></svg>");
+            mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path d='M50 2 C78 28 96 40 50 98 C4 40 22 28 50 2 Z'/></svg>");
+            -webkit-mask-size: contain;
+            mask-size: contain;
+            -webkit-mask-repeat: no-repeat;
+            mask-repeat: no-repeat;
+            -webkit-mask-position: center;
+            mask-position: center;
+        }
+        
+        
+        @keyframes float {
+            0% {
+                transform: translate(0, 0) rotate(calc(0deg * var(--spin))) scale(1);
+                opacity: 1;
+            }
+            25% {
+                transform: translate(3vw, -25vh) rotate(calc(90deg * var(--spin))) scale(0.95);
+                opacity: 0.95;
+            }
+            50% {
+                transform: translate(-2.5vw, -50vh) rotate(calc(180deg * var(--spin))) scale(0.9);
+                opacity: 0.8;
+            }
+            75% {
+                transform: translate(2vw, -75vh) rotate(calc(270deg * var(--spin))) scale(0.75);
+                opacity: 0.4;
+            }
+            100% {
+                transform: translate(0, -100vh) rotate(calc(360deg * var(--spin))) scale(0.5);
+                opacity: 0;
+            }
+        }
+        
+        #endFade {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background: black;
+            opacity: 0;
+            z-index: 20;
+            pointer-events: none;
+            transition: opacity 4s ease-in-out;
+        }
+        
+        
+        
+    </style>
+</head>
+<body>
+    
+    <div id="background"></div>
+    <div id="particles"></div>
+    <div id="endFade"></div>
+    
+    
+    <audio id="music" loop>
+        <source src="musica.mp3" type="audio/mpeg">
+    </audio>
+    
+    <div id="startScreen">
+        <h1 style="color:#f5e9d4; font-weight:400; margin-bottom:1.5em;">Tocca per iniziare 🎵</h1>
+        <p style="color:#cbb994; font-size:0.82rem; line-height:1.5; text-align:center; max-width:80%; margin-bottom:1.5em;">
+            All'avvio il browser chiederà di <b>condividere la scheda</b> per registrare il video:
+            scegli «Scheda del browser» e attiva «Condividi audio della scheda» per includere la musica.
+        </p>
+        <button id="startButton">Inizia</button>
+    </div>
+    
+    <div id="slides" class="slideshow">
+        <div id="kenburns-layer"></div>
+    </div>
+    <div class="overlay"></div>
+    <div id="text" class="text"></div>
+    
+    <div id="endScreen">
+        <p id="downloadInfo">Preparo il video…</p>
+        <button id="downloadBtn">Scarica video 🎬</button>
+    </div>
+    
+<script>
+    const images = [
+    "foto1.jpg","foto2.jpg","foto3.jpg","foto4.jpg","foto5.jpg",
+    "foto6.jpg","foto7.jpg","foto8.jpg","foto9.jpg","foto10.jpg"
+    ];
+    
+    const texts = [
+    "Dicono che la memoria giochi brutti scherzi...",
+    "E ammettiamolo: tu dimentichi il telecomando, il telefono, le parole e perché sei entrata in una stanza",
+    "Ma in fondo la colpa è mia: perché io mi dimentico troppo spesso di dirti quanto sei fantastica",
+    "Poi guardo la vita che abbiamo costruito insieme, giorno dopo giorno...",
+    "...e questo bellissimo \"caos\" a quattro in cui due terremoti ti chiamano \"mamma\"",
+    "Nessuno sa come fai a gestire tutto anche quando la pazienza è quasi a zero",
+    "Sei il punto di riferimento e il cuore della famiglia",
+    "Grazie per ogni singolo abbraccio, ogni parola e ogni gesto",
+    "Oggi rilassati, prenditi il tuo tempo e goditi la tua festa: a ricordarsi di tutto il resto ci pensiamo noi!",
+    "Buon compleanno amore mio! <br><span class='accent'>Ti amiamo immensamente. ❤️</span>"
+    ];
+    
+    const slideEl = document.getElementById("slides");
+    const kenBurnsLayer = document.getElementById("kenburns-layer"); // Layer Ken Burns
+    const textEl = document.getElementById("text");
+    const music = document.getElementById("music");
+    const startScreen = document.getElementById("startScreen");
+    const startButton = document.getElementById("startButton");
+    
+    // Array delle classi di Ken Burns disponibili
+    const kenBurnsClasses = ["kb-animation-1", "kb-animation-2", "kb-animation-3", "kb-animation-4", "kb-animation-5", "kb-animation-6"]; 
+    
+    let index = 0; // Indice immagine
+    let textIndex = 0; // Indice testo
+    let started = false;
+    
+    let slideCount = 0;
+    const totalSlides = images.length;
+    // Calcola quante immagini ci sono per ogni frase di testo
+    const slidesPerText = Math.floor(images.length / texts.length);
+    
+    
+    // ==========================================================
+    // CONFIGURAZIONE PARTICELLE CORRETTA
+    // ==========================================================
+    
+    let isBoosted = false; // Stato attuale del boost
+    const boostDuration = 1500; // Durata del boost in ms (3 secondi)
+    
+    // ==========================================================
+    // CONFIGURAZIONE (adatta questi valori alla TUA canzone)
+    // ==========================================================
+    // Secondo della traccia da cui far partire la musica (0 = dall'inizio).
+    // Se la tua canzone ha un'intro da saltare, imposta qui il secondo di inizio.
+    const musicStartTime = 0;
+
+    // Durata di ogni slide in millisecondi (10000 = 10 secondi).
+    const slideDuration = 10000;
+
+    // Momenti (in secondi ASSOLUTI della traccia, calcolati da musicStartTime)
+    // in cui far "scoppiare" le particelle (es. in corrispondenza dei ritornelli/drop).
+    // Adatta questi numeri alla struttura della TUA canzone,
+    // oppure lascia l'array vuoto [] per non avere boost.
+    const boostStartTimes = [
+        // Esempio: 27, 57, 72, 93, 127  (sostituiscili con i tuoi tempi)
+    ];
+    // ==========================================================
+    
+    
+    function showSlide() {
+        
+        // 1. RESET: Rimuovi le classi di animazione e forza il reset della trasformazione
+        kenBurnsLayer.classList.remove(...kenBurnsClasses);
+        kenBurnsLayer.style.transform = 'scale(1)'; 
+        void kenBurnsLayer.offsetWidth; 
+        
+        // 2. Imposta la nuova immagine
+        kenBurnsLayer.style.backgroundImage = `url(${images[index]})`;
+        
+        // 3. Applica un'animazione Ken Burns casuale
+        const randomClass = kenBurnsClasses[Math.floor(Math.random() * kenBurnsClasses.length)];
+        kenBurnsLayer.classList.add(randomClass);
+        
+        // 4. Fade-in dello slideshow (la transizione CSS gestisce i 2s)
+        slideEl.style.opacity = 1;
+    }
+    
+    function showText() {
+        if (textIndex < texts.length) {
+            // Aggiorna il contenuto del testo
+            textEl.innerHTML = texts[textIndex];
+            
+            // Fade-in del nuovo testo (la transizione CSS gestisce i 2s)
+            textEl.style.opacity = 1; 
+        }
+    }
+    
+    
+    function nextSlide() {
+        // 1. FADE-OUT: Inizia la dissolvenza incrociata per SLIDE e TESTO
+        slideEl.classList.add('transitioning'); 
+        slideEl.style.opacity = 0; 
+        textEl.style.opacity = 0;
+        
+        // 2. Aspetta il completamento del fade-out (2 secondi)
+        setTimeout(() => {
+            
+            // 3. Incrementa gli indici
+            slideCount++;
+            index = (index + 1) % images.length;
+            
+            // 4. Logica di avanzamento del testo
+            if (slideCount % slidesPerText === 0 && textIndex < texts.length - 1) {
+                textIndex++;
+            }
+            
+            // 5. Carica la nuova slide e la nuova animazione
+            showSlide(); 
+            // 6. Aggiorna e mostra il nuovo testo
+            showText();  
+            
+            // 7. Rimuove la classe dopo che la nuova slide è stata caricata
+            slideEl.classList.remove('transitioning'); 
+            
+            // 8. Controllo di fine
+            if (slideCount === totalSlides) {
+                clearInterval(slideInterval); // ferma il ciclo
+                fadeOutMusic();
+                document.getElementById("endFade").style.opacity = 1;
+                stopRecording(); // ferma la registrazione e prepara il download
+            }
+        }, 2000); // 2000ms (2s) è il tempo di transizione opacità
+    }
+    
+    let slideInterval;
+
+    // ===== Registrazione video (Opzione A: getDisplayMedia + MediaRecorder) =====
+    let recorder = null;
+    let recordedChunks = [];
+    let recordingAvailable = false;
+
+    async function startRecording() {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+            console.warn("Registrazione schermo non supportata da questo browser/contesto.");
+            recordingAvailable = false;
+            return false;
+        }
+        try {
+            const stream = await navigator.mediaDevices.getDisplayMedia({
+                video: { frameRate: 30 },
+                audio: true
+            });
+            // Seleziona un mimeType supportato dal browser
+            const candidates = ["video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm"];
+            const mimeType = candidates.find(t => MediaRecorder.isTypeSupported(t)) || "";
+            recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+            recordedChunks = [];
+            recorder.ondataavailable = (e) => { if (e.data && e.data.size) recordedChunks.push(e.data); };
+            recorder.onstop = () => {
+                if (!recordedChunks.length) return;
+                const blob = new Blob(recordedChunks, { type: "video/webm" });
+                showDownloadButton(blob);
+            };
+            recorder.start(1000); // salva un frammento ogni secondo
+            recordingAvailable = true;
+
+            // Se l'utente interrompe la condivisione dal browser, ferma la registrazione
+            const track = stream.getVideoTracks()[0];
+            if (track) track.addEventListener("ended", () => stopRecording());
+
+            console.log("Registrazione avviata. Per includere l'AUDIO scegli «Scheda» e attiva «Condividi audio della scheda».");
+            return true;
+        } catch (err) {
+            console.warn("Registrazione annullata o non consentita:", err);
+            recordingAvailable = false;
+            return false;
+        }
+    }
+
+    function stopRecording() {
+        if (recorder && recorder.state !== "inactive") {
+            const info = document.getElementById("downloadInfo");
+            if (info) info.textContent = "Preparo il video…";
+            document.getElementById("endScreen").classList.add("visible");
+            recorder.stop();
+        } else {
+            showRecordingUnavailable();
+        }
+    }
+
+    function showRecordingUnavailable() {
+        const info = document.getElementById("downloadInfo");
+        const btn = document.getElementById("downloadBtn");
+        if (btn) btn.style.display = "none";
+        if (info) info.innerHTML = "Registrazione non disponibile in questo contesto.<br>Apri la pagina via <b>https</b> (es. GitHub Pages) o da un server locale, poi riprova.";
+        document.getElementById("endScreen").classList.add("visible");
+    }
+
+    function showDownloadButton(blob) {
+        const endScreen = document.getElementById("endScreen");
+        const btn = document.getElementById("downloadBtn");
+        const info = document.getElementById("downloadInfo");
+        const url = URL.createObjectURL(blob);
+        btn.onclick = () => {
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "buon-compleanno.webm";
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        };
+        const sizeMb = (blob.size / (1024 * 1024)).toFixed(1);
+        if (info) info.textContent = "Video pronto (" + sizeMb + " MB) — tocca per salvare";
+        endScreen.classList.add("visible");
+    }
+    
+    async function startPresentation() {
+        if (started) return;
+        started = true;
+        
+        // Avvia la registrazione dello schermo (compare il dialogo del browser).
+        // Se annulli o non è supportata, la presentazione parte comunque senza video.
+        await startRecording();
+        
+        music.currentTime = musicStartTime; 
+        music.play().catch(()=>{});
+        startScreen.style.opacity = 0;
+        setTimeout(() => startScreen.style.display = "none", 1000);
+        
+        // La prima volta, carichiamo subito la slide 0 e il testo 0
+        showSlide();
+        showText();
+        
+        // Avviamo il ciclo dopo il primo intervallo completo
+        slideInterval = setInterval(nextSlide, slideDuration);
+        
+        // AVVIA LA GENERAZIONE DELLE PARTICELLE E LA SINCRONIZZAZIONE
+        startParticleGeneration(); 
+        scheduleBoosts();
+    }
+    
+    
+    startButton.addEventListener("click", startPresentation);
+    
+    // ==========================================================
+    // FUNZIONI PARTICELLE E BOOST CORRETTE
+    // ==========================================================
+    
+    function createParticle(boosted = false) {
+        const particle = document.createElement("div");
+        particle.classList.add("particle");
+        
+        // Direzione di rotazione casuale: le foglie avvolgono in entrambi i versi
+        particle.style.setProperty("--spin", Math.random() < 0.5 ? 1 : -1);
+        
+        // Dimensione: 6-20px normale, 12-30px potenziata
+        const minSize = boosted ? 18 : 6;
+        const maxSize = boosted ? 50 : 20;
+        const size = minSize + Math.random() * (maxSize - minSize);
+        particle.style.width = size + "px";
+        particle.style.height = size + "px";
+        
+        // Posizione casuale
+        particle.style.left = Math.random() * window.innerWidth + "px";
+        particle.style.top = window.innerHeight + "px";
+        
+        // Colore casuale
+        const colors = ["#f0b64c", "#e08a3c", "#c9502a", "#8c3a1a", "#a8551e", "#e6c04d"];
+        particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+        
+        // Durata: 2-6 secondi normale, 1-3 secondi potenziata (per maggiore velocità)
+        const minDuration = boosted ? 1 : 2;
+        const maxDuration = boosted ? 2 : 6;
+        const duration = minDuration + Math.random() * (maxDuration - minDuration);
+        particle.style.animationDuration = duration + "s";
+        
+        // Applica un ritardo di animazione per maggiore casualità (opzionale)
+        particle.style.animationDelay = (Math.random() * 0.5) + "s";
+        
+        document.getElementById("particles").appendChild(particle);
+        
+        // Rimuovi dopo l’animazione
+        setTimeout(() => particle.remove(), duration * 1000);
+    }
+    
+    
+    // Funzione per attivare e disattivare l'effetto boost
+    function setBoost(state) {
+        isBoosted = state;
+    }
+    
+    // Schedula i boost basandosi sull'array boostStartTimes
+    function scheduleBoosts() {
+        const currentMusicTime = music.currentTime; 
+        
+        boostStartTimes.forEach(targetTimeSeconds => {
+            const delaySeconds = targetTimeSeconds - currentMusicTime;
+            const delayMs = delaySeconds * 1000; 
+            
+            if (delayMs > 50) { 
+                setTimeout(() => {
+                    if (started) {
+                        setBoost(true);
+                        setTimeout(() => {
+                            setBoost(false);
+                        }, boostDuration);
+                    }
+                }, delayMs);
+            } else if (delayMs > -50) {
+                setBoost(true);
+                setTimeout(() => {
+                    setBoost(false);
+                }, boostDuration);
+            }
+        });
+    }
+    
+    // Avvia la generazione continua delle particelle, ORA MODIFICATA
+    function startParticleGeneration() {
+         setInterval(() => {
+            if (started) {
+                let particleCount = 0; 
+                
+                if (isBoosted) {
+                    // Genera da 3 a 6 particelle durante il boost
+                    particleCount = 3 + Math.floor(Math.random() * 4); 
+                } else {
+                    // Modalità normale: 1 particella (con una probabilità del 90%)
+                    if (Math.random() < 0.9) { 
+                        particleCount = 1;
+                    }
+                }
+                
+                // Chiama la funzione createParticle in base al conteggio
+                for (let i = 0; i < particleCount; i++) {
+                    createParticle(isBoosted);
+                    console.log("Tempo musica:", music.currentTime.toFixed(2), "Boosted:", isBoosted);
+                }
+            }
+        }, 300); 
+    }
+    
+    function fadeOutMusic(duration = 5000) {
+        const steps = 30;
+        const stepTime = duration / steps;
+        let currentStep = 0;
+        
+        const fade = setInterval(() => {
+            currentStep++;
+            music.volume = Math.max(0, 1 - currentStep / steps);
+            if (currentStep >= steps) {
+                clearInterval(fade);
+                music.pause();
+                music.currentTime = 0; // opzionale: resetta la traccia
+            }
+        }, stepTime);
+    }
+    
+</script>
+    
+</body>
+</html>
