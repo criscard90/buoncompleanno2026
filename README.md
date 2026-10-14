@@ -40,24 +40,6 @@ const boostStartTimes = [];    // secondi in cui fanno "scoppiare" le particelle
   dell'animazione Ken Burns nel CSS**: cerca `.kb-animation-1 … 6` e sostituisci
   i `10s` con il valore in secondi equivalente a `slideDuration`.
 
-## Registrare e scaricare il video 🎬
-
-Alla fine del carosello compare il pulsante **«Scarica video 🎬»** che salva la
-riproduzione come file **`.webm`**.
-
-- Alla pressione di **Inizia**, il browser chiede di **condividere la scheda**
-  (`getDisplayMedia`). Scegli **«Scheda del browser»** e spunta
-  **«Condividi audio della scheda»** per includere anche la musica.
-- Se annulli la condivisione (o il browser non la supporta), la presentazione
-  parte comunque senza registrazione.
-- **Richiede un contesto sicuro**: funziona su **https** (es. GitHub Pages) o
-  **localhost**. Se apri il file con doppio click (`file://`) la registrazione
-  potrebbe non essere disponibile e vedrai un avviso al termine.
-  Per provare in locale usa un server (es. *Live Server* su VS Code, oppure
-  `python -m http.server`).
-- Il formato è `.webm` (VP8/VP9 + Opus), riproducibile su browser, VLC e
-  convertibile in `.mp4` se serve.
-
 ## Pubblicare su GitHub Pages
 
 1. Crea una repo (pubblica o privata con Pages attivo).

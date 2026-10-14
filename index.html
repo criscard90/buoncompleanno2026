@@ -176,49 +176,6 @@
             color: #1a0d04;
         }
         
-        /* Schermata finale con pulsante di download del video */
-        #endScreen {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100vw; height: 100vh;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-            gap: 1.2em;
-            z-index: 30;
-            pointer-events: none;
-            text-align: center;
-        }
-        
-        #endScreen.visible {
-            display: flex;
-            pointer-events: auto;
-        }
-        
-        #downloadInfo {
-            color: #f5e9d4;
-            font-size: 1rem;
-            padding: 0 10%;
-            text-shadow: 0 0 10px rgba(0,0,0,0.6);
-        }
-        
-        #downloadBtn {
-            border: 2px solid #e8a13a;
-            color: #e8a13a;
-            padding: 0.8em 1.6em;
-            background: transparent;
-            border-radius: 50px;
-            font-size: 1.2rem;
-            letter-spacing: 0.5px;
-            cursor: pointer;
-            transition: background 0.3s, color 0.3s;
-        }
-        
-        #downloadBtn:hover {
-            background: #e8a13a;
-            color: #1a0d04;
-        }
         
         @media (max-width: 768px) {
             .text { font-size: 1.8rem; padding: 0 8%; }
@@ -306,10 +263,6 @@
     
     <div id="startScreen">
         <h1 style="color:#f5e9d4; font-weight:400; margin-bottom:1.5em;">Tocca per iniziare 🎵</h1>
-        <p style="color:#cbb994; font-size:0.82rem; line-height:1.5; text-align:center; max-width:80%; margin-bottom:1.5em;">
-            All'avvio il browser chiederà di <b>condividere la scheda</b> per registrare il video:
-            scegli «Scheda del browser» e attiva «Condividi audio della scheda» per includere la musica.
-        </p>
         <button id="startButton">Inizia</button>
     </div>
     
@@ -319,11 +272,7 @@
     <div class="overlay"></div>
     <div id="text" class="text"></div>
     
-    <div id="endScreen">
-        <p id="downloadInfo">Preparo il video…</p>
-        <button id="downloadBtn">Scarica video 🎬</button>
-    </div>
-    
+
 <script>
     const images = [
     "foto1.jpg","foto2.jpg","foto3.jpg","foto4.jpg","foto5.jpg",
@@ -450,93 +399,13 @@
                 clearInterval(slideInterval); // ferma il ciclo
                 fadeOutMusic();
                 document.getElementById("endFade").style.opacity = 1;
-                stopRecording(); // ferma la registrazione e prepara il download
             }
         }, 2000); // 2000ms (2s) è il tempo di transizione opacità
     }
     
     let slideInterval;
 
-    // ===== Registrazione video (Opzione A: getDisplayMedia + MediaRecorder) =====
-    let recorder = null;
-    let recordedChunks = [];
-    let recordingAvailable = false;
 
-    async function startRecording() {
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
-            console.warn("Registrazione schermo non supportata da questo browser/contesto.");
-            recordingAvailable = false;
-            return false;
-        }
-        try {
-            const stream = await navigator.mediaDevices.getDisplayMedia({
-                video: { frameRate: 30 },
-                audio: true
-            });
-            // Seleziona un mimeType supportato dal browser
-            const candidates = ["video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm"];
-            const mimeType = candidates.find(t => MediaRecorder.isTypeSupported(t)) || "";
-            recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
-            recordedChunks = [];
-            recorder.ondataavailable = (e) => { if (e.data && e.data.size) recordedChunks.push(e.data); };
-            recorder.onstop = () => {
-                if (!recordedChunks.length) return;
-                const blob = new Blob(recordedChunks, { type: "video/webm" });
-                showDownloadButton(blob);
-            };
-            recorder.start(1000); // salva un frammento ogni secondo
-            recordingAvailable = true;
-
-            // Se l'utente interrompe la condivisione dal browser, ferma la registrazione
-            const track = stream.getVideoTracks()[0];
-            if (track) track.addEventListener("ended", () => stopRecording());
-
-            console.log("Registrazione avviata. Per includere l'AUDIO scegli «Scheda» e attiva «Condividi audio della scheda».");
-            return true;
-        } catch (err) {
-            console.warn("Registrazione annullata o non consentita:", err);
-            recordingAvailable = false;
-            return false;
-        }
-    }
-
-    function stopRecording() {
-        if (recorder && recorder.state !== "inactive") {
-            const info = document.getElementById("downloadInfo");
-            if (info) info.textContent = "Preparo il video…";
-            document.getElementById("endScreen").classList.add("visible");
-            recorder.stop();
-        } else {
-            showRecordingUnavailable();
-        }
-    }
-
-    function showRecordingUnavailable() {
-        const info = document.getElementById("downloadInfo");
-        const btn = document.getElementById("downloadBtn");
-        if (btn) btn.style.display = "none";
-        if (info) info.innerHTML = "Registrazione non disponibile in questo contesto.<br>Apri la pagina via <b>https</b> (es. GitHub Pages) o da un server locale, poi riprova.";
-        document.getElementById("endScreen").classList.add("visible");
-    }
-
-    function showDownloadButton(blob) {
-        const endScreen = document.getElementById("endScreen");
-        const btn = document.getElementById("downloadBtn");
-        const info = document.getElementById("downloadInfo");
-        const url = URL.createObjectURL(blob);
-        btn.onclick = () => {
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = "buon-compleanno.webm";
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-        };
-        const sizeMb = (blob.size / (1024 * 1024)).toFixed(1);
-        if (info) info.textContent = "Video pronto (" + sizeMb + " MB) — tocca per salvare";
-        endScreen.classList.add("visible");
-    }
-    
     function goFullscreen() {
         const el = document.documentElement;
         const req = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
@@ -547,16 +416,12 @@
         } catch (e) { /* ignora eventuali rifiuti del browser */ }
     }
     
-    async function startPresentation() {
+    function startPresentation() {
         if (started) return;
         started = true;
         
-        // 1) Tutto schermo (deve essere chiamato durante il gesto del click)
+        // Tutto schermo (deve essere chiamato durante il gesto del click)
         goFullscreen();
-        
-        // 2) Avvia la registrazione dello schermo (compare il dialogo del browser).
-        // Se annulli o non è supportata, la presentazione parte comunque senza video.
-        await startRecording();
         
         music.currentTime = musicStartTime; 
         music.play().catch(()=>{});
