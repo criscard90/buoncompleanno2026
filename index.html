@@ -235,6 +235,83 @@
             }
         }
         
+        /* ===== CUORICINI INTERATTIVI ===== */
+        #hearts {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            pointer-events: none;
+            z-index: 2;
+        }
+        
+        .heart {
+            position: absolute;
+            pointer-events: auto;
+            cursor: pointer;
+            animation-name: floatHeart;
+            animation-timing-function: linear;
+            animation-fill-mode: forwards;
+            --sway: 1;
+            background: #e23b4a;
+            -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path d='M50 88 C50 88 12 60 12 33 C12 17 25 7 39 7 C46 7 50 12 50 12 C50 12 54 7 61 7 C75 7 88 17 88 33 C88 60 50 88 50 88 Z'/></svg>");
+            mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path d='M50 88 C50 88 12 60 12 33 C12 17 25 7 39 7 C46 7 50 12 50 12 C50 12 54 7 61 7 C75 7 88 17 88 33 C88 60 50 88 50 88 Z'/></svg>");
+            -webkit-mask-size: contain;
+            mask-size: contain;
+            -webkit-mask-repeat: no-repeat;
+            mask-repeat: no-repeat;
+            -webkit-mask-position: center;
+            mask-position: center;
+            filter: drop-shadow(0 0 10px rgba(226,59,74,0.65));
+        }
+        
+        .heart-fragment {
+            position: absolute;
+            pointer-events: none;
+            background: #ff5d73;
+            -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path d='M50 88 C50 88 12 60 12 33 C12 17 25 7 39 7 C46 7 50 12 50 12 C50 12 54 7 61 7 C75 7 88 17 88 33 C88 60 50 88 50 88 Z'/></svg>");
+            mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path d='M50 88 C50 88 12 60 12 33 C12 17 25 7 39 7 C46 7 50 12 50 12 C50 12 54 7 61 7 C75 7 88 17 88 33 C88 60 50 88 50 88 Z'/></svg>");
+            -webkit-mask-size: contain;
+            mask-size: contain;
+            -webkit-mask-repeat: no-repeat;
+            mask-repeat: no-repeat;
+            -webkit-mask-position: center;
+            mask-position: center;
+            animation: heartPop 1.1s ease-out forwards;
+        }
+        
+        @keyframes floatHeart {
+            0% {
+                transform: translate(0, 0) rotate(calc(-8deg * var(--sway))) scale(0.6);
+                opacity: 0;
+            }
+            12% {
+                opacity: 1;
+                transform: translate(1.5vw, -12vh) rotate(calc(8deg * var(--sway))) scale(1);
+            }
+            50% {
+                transform: translate(calc(-3vw * var(--sway)), -50vh) rotate(calc(-8deg * var(--sway))) scale(1.03);
+                opacity: 1;
+            }
+            88% {
+                opacity: 1;
+            }
+            100% {
+                transform: translate(2vw, -100vh) rotate(calc(8deg * var(--sway))) scale(0.95);
+                opacity: 0;
+            }
+        }
+        
+        @keyframes heartPop {
+            0% {
+                transform: translate(0, 0) scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(var(--tx, 0), var(--ty, 0)) scale(0.2);
+                opacity: 0;
+            }
+        }
+        
         #endFade {
             position: fixed;
             top: 0; left: 0;
@@ -254,15 +331,20 @@
     
     <div id="background"></div>
     <div id="particles"></div>
+    <div id="hearts"></div>
     <div id="endFade"></div>
     
     
     <audio id="music" loop>
         <source src="musica.mp3" type="audio/mpeg">
     </audio>
+    <audio id="auguri" preload="auto">
+        <source src="auguri.mp3" type="audio/mpeg">
+    </audio>
     
     <div id="startScreen">
-        <h1 style="color:#f5e9d4; font-weight:400; margin-bottom:1.5em;">Tocca per iniziare 🎵</h1>
+        <h1 style="color:#f5e9d4; font-weight:400; margin-bottom:0.5em;">Tocca per iniziare 🎵</h1>
+        <p style="color:#ff8796; font-size:0.95rem; margin-bottom:1.5em;">💕 Tocca i cuoricini per una sorpresa! 💕</p>
         <button id="startButton">Inizia</button>
     </div>
     
@@ -396,6 +478,8 @@
                 clearInterval(slideInterval); // ferma il ciclo
                 fadeOutMusic();
                 document.getElementById("endFade").style.opacity = 1;
+                // Rimuovi i cuoricini rimasti
+                document.getElementById("hearts").innerHTML = "";
             }
         }, 2000); // 2000ms (2s) è il tempo di transizione opacità
     }
@@ -435,6 +519,7 @@
         // AVVIA LA GENERAZIONE DELLE PARTICELLE E LA SINCRONIZZAZIONE
         startParticleGeneration(); 
         scheduleBoosts();
+        scheduleNextHeart(); // avvia i cuoricini casuali
     }
     
     
@@ -523,6 +608,97 @@
                 }
             }
         }, 300); 
+    }
+    
+    // ===== CUORICINI INTERATTIVI (tocca per scoppiare!) =====
+    let heartTimer = null;
+    
+    function scheduleNextHeart() {
+        const gap = 6000 + Math.random() * 6000; // 6-12 secondi tra un cuore e l'altro
+        heartTimer = setTimeout(spawnHeart, gap);
+    }
+    
+    function spawnHeart() {
+        // Ferma i cuoricini quando il carosello è terminato
+        if (!started || slideCount >= totalSlides) return;
+        
+        const heart = document.createElement("div");
+        heart.classList.add("heart");
+        
+        // Dimensione grande e visibile: 60-120px
+        const size = 60 + Math.random() * 60;
+        heart.style.width = size + "px";
+        heart.style.height = size + "px";
+        
+        // Posizione casuale (partono sotto lo schermo)
+        heart.style.left = (Math.random() * Math.max(1, window.innerWidth - size)) + "px";
+        heart.style.top = window.innerHeight + "px";
+        
+        // Durata del volo (risale lenta e ben visibile)
+        const duration = 12 + Math.random() * 6; // 12-18 secondi
+        heart.style.animationDuration = duration + "s";
+        
+        // Oscillazione casuale (pendolo a destra o a sinistra)
+        heart.style.setProperty("--sway", Math.random() < 0.5 ? 1 : -1);
+        
+        // Tocca/clicca → scoppia
+        heart.addEventListener("click", (e) => {
+            e.stopPropagation();
+            popHeart(heart);
+        });
+        
+        document.getElementById("hearts").appendChild(heart);
+        
+        // Se non toccato, sparisce a fine volo
+        setTimeout(() => { if (heart.parentNode) heart.remove(); }, duration * 1000);
+        
+        // Pianifica il prossimo cuoricino
+        scheduleNextHeart();
+    }
+    
+    function popHeart(heart) {
+        const rect = heart.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        const baseSize = rect.width;
+        
+        heart.remove(); // il cuore scoppia
+        
+        // Effetto a frammenti: piccoli cuori che volano in direzioni casuali
+        for (let i = 0; i < 10; i++) {
+            createHeartFragment(cx, cy, baseSize);
+        }
+        
+        // Suono della sorpresa
+        playAuguri();
+    }
+    
+    function createHeartFragment(cx, cy, baseSize) {
+        const frag = document.createElement("div");
+        frag.classList.add("heart-fragment");
+        
+        const s = baseSize * (0.18 + Math.random() * 0.25);
+        frag.style.width = s + "px";
+        frag.style.height = s + "px";
+        frag.style.left = (cx - s / 2) + "px";
+        frag.style.top = (cy - s / 2) + "px";
+        
+        // Direzione e distanza casuali dell'esplosione
+        const angle = Math.random() * Math.PI * 2;
+        const dist = 70 + Math.random() * 130;
+        frag.style.setProperty("--tx", (Math.cos(angle) * dist) + "px");
+        frag.style.setProperty("--ty", (Math.sin(angle) * dist - 50) + "px"); // verso l'alto
+        
+        document.getElementById("hearts").appendChild(frag);
+        setTimeout(() => { if (frag.parentNode) frag.remove(); }, 1200);
+    }
+    
+    function playAuguri() {
+        const a = document.getElementById("auguri");
+        if (a) {
+            a.currentTime = 0;
+            a.play().catch(() => {}); // ignora se il file non è ancora presente
+        }
     }
     
     function fadeOutMusic(duration = 5000) {
