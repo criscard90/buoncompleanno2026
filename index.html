@@ -289,7 +289,7 @@
     "Sei il punto di riferimento e il cuore della famiglia",
     "Grazie per ogni singolo abbraccio, ogni parola e ogni gesto",
     "Oggi rilassati, prenditi il tuo tempo e goditi la tua festa: a ricordarsi di tutto il resto ci pensiamo noi!",
-    "Buon compleanno amore mio! <br><span class='accent'>Ti amiamo immensamente. ❤️</span>"
+    "Buon compleanno amore mio! <br><span class='accent'>Ti amo ❤️</span>"
     ];
     
     const slideEl = document.getElementById("slides");
@@ -317,7 +317,7 @@
     // ==========================================================
     
     let isBoosted = false; // Stato attuale del boost
-    const boostDuration = 1500; // Durata del boost in ms (3 secondi)
+    const boostDuration = 1500; // Durata del boost in ms (1.5 secondi)
     
     // ==========================================================
     // CONFIGURAZIONE (adatta questi valori alla TUA canzone)
@@ -329,13 +329,10 @@
     // Durata di ogni slide in millisecondi (10000 = 10 secondi).
     const slideDuration = 10000;
 
-    // Momenti (in secondi ASSOLUTI della traccia, calcolati da musicStartTime)
-    // in cui far "scoppiare" le particelle (es. in corrispondenza dei ritornelli/drop).
-    // Adatta questi numeri alla struttura della TUA canzone,
-    // oppure lascia l'array vuoto [] per non avere boost.
-    const boostStartTimes = [
-        // Esempio: 27, 57, 72, 93, 127  (sostituiscili con i tuoi tempi)
-    ];
+    // Boost casuali delle foglie: intervallo (in ms) tra uno "scoppio" e l'altro.
+    // Il ritardo effettivo è un valore CASUALE tra boostGapMin e boostGapMax.
+    const boostGapMin = 9000;   // almeno 9 secondi
+    const boostGapMax = 18000;  // al massimo 18 secondi
     // ==========================================================
     
     
@@ -454,9 +451,9 @@
         // Direzione di rotazione casuale: le foglie avvolgono in entrambi i versi
         particle.style.setProperty("--spin", Math.random() < 0.5 ? 1 : -1);
         
-        // Dimensione: 6-20px normale, 12-30px potenziata
+        // Dimensione: 6-26px normale, 18-60px durante il boost
         const minSize = boosted ? 18 : 6;
-        const maxSize = boosted ? 50 : 20;
+        const maxSize = boosted ? 60 : 26;
         const size = minSize + Math.random() * (maxSize - minSize);
         particle.style.width = size + "px";
         particle.style.height = size + "px";
@@ -490,30 +487,17 @@
         isBoosted = state;
     }
     
-    // Schedula i boost basandosi sull'array boostStartTimes
+    // Boost CASUALI: ogni po' (intervallo casuale tra boostGapMin e boostGapMax)
+    // si attiva per boostDuration uno "scoppio" di foglie, fino a fine carosello.
     function scheduleBoosts() {
-        const currentMusicTime = music.currentTime; 
-        
-        boostStartTimes.forEach(targetTimeSeconds => {
-            const delaySeconds = targetTimeSeconds - currentMusicTime;
-            const delayMs = delaySeconds * 1000; 
-            
-            if (delayMs > 50) { 
-                setTimeout(() => {
-                    if (started) {
-                        setBoost(true);
-                        setTimeout(() => {
-                            setBoost(false);
-                        }, boostDuration);
-                    }
-                }, delayMs);
-            } else if (delayMs > -50) {
-                setBoost(true);
-                setTimeout(() => {
-                    setBoost(false);
-                }, boostDuration);
-            }
-        });
+        const gap = boostGapMin + Math.random() * (boostGapMax - boostGapMin);
+        setTimeout(() => {
+            // Ferma i boost quando il carosello è terminato
+            if (!started || slideCount >= totalSlides) return;
+            setBoost(true);
+            setTimeout(() => setBoost(false), boostDuration);
+            scheduleBoosts(); // pianifica il successivo boost casuale
+        }, gap);
     }
     
     // Avvia la generazione continua delle particelle, ORA MODIFICATA

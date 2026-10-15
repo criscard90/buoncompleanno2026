@@ -29,13 +29,14 @@ particelle animate. Funziona offline e su GitHub Pages.
 ```js
 const musicStartTime = 0;      // secondo da cui parte la musica (0 = dall'inizio)
 const slideDuration = 10000;   // durata di ogni slide in ms (10000 = 10 s)
-const boostStartTimes = [];    // secondi in cui fanno "scoppiare" le particelle
+const boostGapMin = 9000;      // min ms tra uno scoppio di foglie e l'altro
+const boostGapMax = 18000;     // max ms (il ritardo è casuale tra min e max)
 ```
 
 - `musicStartTime`: se la tua canzone ha un'intro da saltare, imposta qui il
   secondo di inizio.
-- `boostStartTimes`: indica i secondi (rispetto a `musicStartTime`) in corrispondenza
-  dei ritornelli per intensificare le particelle. Lascia `[]` per disattivare.
+- `boostGapMin` / `boostGapMax`: intervalli (in ms) tra gli scopi di foglie. Ogni
+  boost parte dopo un ritardo CASUALE tra min e max, per tutta la durata del carosello.
 - `slideDuration`: **se lo cambi, ricordati di aggiornare anche la durata
   dell'animazione Ken Burns nel CSS**: cerca `.kb-animation-1 … 6` e sostituisci
   i `10s` con il valore in secondi equivalente a `slideDuration`.
