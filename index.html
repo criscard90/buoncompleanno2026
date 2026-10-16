@@ -338,9 +338,6 @@
     <audio id="music" loop>
         <source src="musica.mp3" type="audio/mpeg">
     </audio>
-    <audio id="auguri" preload="auto">
-        <source src="auguri.mp3" type="audio/mpeg">
-    </audio>
     
     <div id="startScreen">
         <h1 style="color:#f5e9d4; font-weight:400; margin-bottom:0.5em;">Tocca per iniziare 🎵</h1>
@@ -693,13 +690,92 @@
         setTimeout(() => { if (frag.parentNode) frag.remove(); }, 1200);
     }
     
-    function playAuguri() {
-        const a = document.getElementById("auguri");
-        if (a) {
-            a.currentTime = 0;
-            a.play().catch(() => {}); // ignora se il file non è ancora presente
+    // ===== SUONI DEGLI AUGURI: shuffle senza ripetizioni dalla cartella auguri/ =====
+    let AUGURI_FILES = [];   // elenco dei file mp3 (caricato all'avvio)
+    let auguriQueue = [];    // coda shuffled, si rigenera quando finisce
+    let lastPlayed = null;   // ultimo file suonato (evita ripetizioni immediate)
+    const auguriCache = {};  // file -> oggetto Audio precaricato
+
+    // Elenco di riserva (usato solo se non ci sono né directory listing né list.json)
+    const AUGURI_INLINE = ["selene.mp3"];
+
+    // Fisher-Yates shuffle (mescola in-place e ritorna l'array)
+    function shuffleArray(arr) {
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            const t = arr[i]; arr[i] = arr[j]; arr[j] = t;
         }
+        return arr;
     }
+
+    // Carica l'elenco dei file: prova il directory listing, poi auguri/list.json, infine l'elenco inline
+    async function loadAuguriList() {
+        // 1) Directory listing (funziona con server che espongono la cartella, es. python -m http.server)
+        try {
+            const r = await fetch("auguri/");
+            if (r.ok) {
+                const html = await r.text();
+                const found = [...html.matchAll(/href="([^"?]+\.mp3)"/gi)]
+                    .map(m => decodeURIComponent(m[1]).replace(/^auguri\//i, ""));
+                const files = [...new Set(found)];
+                if (files.length) return files;
+            }
+        } catch (e) { /* prosegue con la prossima sorgente */ }
+
+        // 2) Manifest auguri/list.json (per GitHub Pages / deploy statici)
+        try {
+            const r = await fetch("auguri/list.json");
+            if (r.ok) {
+                const data = await r.json();
+                if (Array.isArray(data) && data.length) return data.filter(f => typeof f === "string");
+            }
+        } catch (e) { /* prosegue con la prossima sorgente */ }
+
+        // 3) Fallback inline
+        return AUGURI_INLINE;
+    }
+
+    // Prossimo file: coda shuffled; quando finisce, rimescola (senza ripetizioni nella sequenza)
+    function nextAuguriFile() {
+        if (auguriQueue.length === 0) {
+            auguriQueue = shuffleArray(AUGURI_FILES.slice());
+            // Evita che il primo suonato della nuova sequenza sia uguale all'ultimo appena suonato
+            if (auguriQueue.length > 1 && auguriQueue[auguriQueue.length - 1] === lastPlayed) {
+                const last = auguriQueue[auguriQueue.length - 1];
+                auguriQueue[auguriQueue.length - 1] = auguriQueue[0];
+                auguriQueue[0] = last;
+            }
+        }
+        const file = auguriQueue.pop();
+        lastPlayed = file;
+        return file;
+    }
+
+    // Precarica tutti gli audio (per riproduzione immediata allo scoppio)
+    function preloadAuguri() {
+        AUGURI_FILES.forEach(f => {
+            const path = "auguri/" + f;
+            if (!auguriCache[path]) auguriCache[path] = new Audio(path);
+        });
+    }
+
+    function playAuguri() {
+        if (!AUGURI_FILES.length) return;
+        const file = nextAuguriFile();
+        if (!file) return;
+        const path = "auguri/" + file;
+        let a = auguriCache[path];
+        if (!a) { a = new Audio(path); auguriCache[path] = a; }
+        try { a.currentTime = 0; } catch (e) {}
+        a.play().catch(() => {}); // ignora errori (file mancante, autoplay bloccato, ecc.)
+    }
+
+    // Carica l'elenco all'avvio pagina e precarica gli audio
+    loadAuguriList().then(files => {
+        AUGURI_FILES = files;
+        preloadAuguri();
+        console.log("Auguri disponibili:", AUGURI_FILES);
+    });
     
     function fadeOutMusic(duration = 5000) {
         const steps = 30;

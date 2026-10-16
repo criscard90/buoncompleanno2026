@@ -41,6 +41,24 @@ const boostGapMax = 18000;     // max ms (il ritardo è casuale tra min e max)
   dell'animazione Ken Burns nel CSS**: cerca `.kb-animation-1 … 6` e sostituisci
   i `10s` con il valore in secondi equivalente a `slideDuration`.
 
+## Suoni degli auguri 💝 (cuoricini)
+
+Toccando un cuoricino parte un suono a caso preso dalla cartella **`auguri/`**,
+senza ripetizioni: tutti i file vengono riprodotti a turno in ordine casuale e,
+quando finiscono, la sequenza si **rimescola** e ricomincia.
+
+Il sito statico **non può elencare i file di una cartella da solo**, quindi
+l'elenco viene cercato in questo ordine:
+
+1. **Directory listing** della cartella `auguri/` (funziona con server tipo
+   `python -m http.server`);
+2. **`auguri/list.json`** — usato su **GitHub Pages** (è il file che conta);
+3. **Elenco inline** in `index.html` (riserva).
+
+> ⚠️ Quando aggiungi/rimuovi un MP3 in `auguri/`, aggiorna anche
+> **`auguri/list.json`** (lista di nomi, es. `["selene.mp3","altro.mp3"]`),
+> altrimenti su GitHub Pages il nuovo file non verrà rilevato.
+
 ## Pubblicare su GitHub Pages
 
 1. Crea una repo (pubblica o privata con Pages attivo).
