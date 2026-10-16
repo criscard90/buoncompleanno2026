@@ -50,14 +50,15 @@ quando finiscono, la sequenza si **rimescola** e ricomincia.
 Il sito statico **non può elencare i file di una cartella da solo**, quindi
 l'elenco viene cercato in questo ordine:
 
-1. **Directory listing** della cartella `auguri/` (funziona con server tipo
-   `python -m http.server`);
-2. **`auguri/list.json`** — usato su **GitHub Pages** (è il file che conta);
+1. **`auguri/list.json`** — fonte primaria (usata su **GitHub Pages** e con la
+   **Live Preview** di VS Code, che non fa directory listing);
+2. **Directory listing** della cartella `auguri/` (solo se manca `list.json`;
+   funziona con server tipo `python -m http.server`);
 3. **Elenco inline** in `index.html` (riserva).
 
 > ⚠️ Quando aggiungi/rimuovi un MP3 in `auguri/`, aggiorna anche
 > **`auguri/list.json`** (lista di nomi, es. `["selene.mp3","altro.mp3"]`),
-> altrimenti su GitHub Pages il nuovo file non verrà rilevato.
+> altrimenti il nuovo file non viene rilevato.
 
 ## Pubblicare su GitHub Pages
 

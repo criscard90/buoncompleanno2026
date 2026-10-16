@@ -708,26 +708,28 @@
         return arr;
     }
 
-    // Carica l'elenco dei file: prova il directory listing, poi auguri/list.json, infine l'elenco inline
+    // Carica l'elenco dei file: prima auguri/list.json (fonte primaria), poi directory listing, infine inline
     async function loadAuguriList() {
-        // 1) Directory listing (funziona con server che espongono la cartella, es. python -m http.server)
+        // 1) Manifest auguri/list.json (fonte primaria: su GitHub Pages e Live Preview non c'è directory listing)
+        try {
+            const r = await fetch("auguri/list.json");
+            if (r.ok) {
+                const data = await r.json();
+                if (Array.isArray(data) && data.length) {
+                    return data.filter(f => typeof f === "string" && f).map(f => f.split("/").pop());
+                }
+            }
+        } catch (e) { /* prosegue con la prossima sorgente */ }
+
+        // 2) Directory listing (solo se list.json assente/vuoto; server tipo python -m http.server)
         try {
             const r = await fetch("auguri/");
             if (r.ok) {
                 const html = await r.text();
                 const found = [...html.matchAll(/href="([^"?]+\.mp3)"/gi)]
-                    .map(m => decodeURIComponent(m[1]).replace(/^auguri\//i, ""));
+                    .map(m => decodeURIComponent(m[1]).split("/").pop());
                 const files = [...new Set(found)];
                 if (files.length) return files;
-            }
-        } catch (e) { /* prosegue con la prossima sorgente */ }
-
-        // 2) Manifest auguri/list.json (per GitHub Pages / deploy statici)
-        try {
-            const r = await fetch("auguri/list.json");
-            if (r.ok) {
-                const data = await r.json();
-                if (Array.isArray(data) && data.length) return data.filter(f => typeof f === "string");
             }
         } catch (e) { /* prosegue con la prossima sorgente */ }
 
