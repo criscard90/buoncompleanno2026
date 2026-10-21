@@ -47,6 +47,22 @@ Toccando un cuoricino parte un suono a caso preso dalla cartella **`auguri/`**,
 senza ripetizioni: tutti i file vengono riprodotti a turno in ordine casuale e,
 quando finiscono, la sequenza si **rimescola** e ricomincia.
 
+### 🔉 Ducking della musica di sottofondo
+
+Quando parte il messaggio di auguri, la musica di sfondo (`musica.mp3`) viene
+**abbassata automaticamente** per sentire meglio l'audio, e **rilizzata** al
+volume normale appena il messaggio termina.
+
+| Parametro | Valore | Descrizione |
+|---|---|---|
+| `MUSIC_BASE_VOLUME` | `1.0` | Volume normale della musica |
+| `DUCK_VOLUME` | `0.18` | Volume durante il messaggio di auguri |
+| `DUCK_FADE_MS` | `500` | Durata dell'abbassamento/rialzo (ms) |
+
+> Se due auguri suonano in contemporanea, la musica resta abbassata finché
+> **non terminano entrambi**. Se il carosello è già finito, la musica non viene
+> più rialzata.
+
 Il sito statico **non può elencare i file di una cartella da solo**, quindi
 l'elenco viene cercato in questo ordine:
 

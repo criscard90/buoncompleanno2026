@@ -769,7 +769,31 @@
         let a = auguriCache[path];
         if (!a) { a = new Audio(path); auguriCache[path] = a; }
         try { a.currentTime = 0; } catch (e) {}
-        a.play().catch(() => {}); // ignora errori (file mancante, autoplay bloccato, ecc.)
+
+        // --- DUCKING: abbassa la musica di sottofondo per sentire meglio l'auguri ---
+        activeAuguriCount++;
+        duckMusic();
+
+        // Rilascio del volume: al termine del messaggio la musica torna al volume normale.
+        // activeAuguriCount garantisce che, se parte un altro auguri nel frattempo,
+        // la musica resti abbassata finché non terminano TUTTI.
+        let released = false;
+        const release = () => {
+            if (released) return;
+            released = true;
+            activeAuguriCount = Math.max(0, activeAuguriCount - 1);
+            restoreMusic();
+        };
+        const onEnded = () => { cleanup(); release(); };
+        const onError = () => { cleanup(); release(); };
+        const cleanup = () => {
+            a.removeEventListener("ended", onEnded);
+            a.removeEventListener("error", onError);
+        };
+        a.addEventListener("ended", onEnded);
+        a.addEventListener("error", onError);
+
+        a.play().catch(() => { cleanup(); release(); }); // ignora errori (file mancante, autoplay bloccato, ecc.)
     }
 
     // Carica l'elenco all'avvio pagina e precarica gli audio
@@ -779,20 +803,55 @@
         console.log("Auguri disponibili:", AUGURI_FILES);
     });
     
-    function fadeOutMusic(duration = 5000) {
-        const steps = 30;
-        const stepTime = duration / steps;
-        let currentStep = 0;
-        
-        const fade = setInterval(() => {
-            currentStep++;
-            music.volume = Math.max(0, 1 - currentStep / steps);
-            if (currentStep >= steps) {
-                clearInterval(fade);
-                music.pause();
-                music.currentTime = 0; // opzionale: resetta la traccia
+    // ==========================================================
+    // DUCKING: abbassa la musica di sottofondo durante i messaggi di auguri
+    // (quando si tocca un cuoricino parte l'audio di auguri dalla cartella auguri/)
+    // ==========================================================
+    const MUSIC_BASE_VOLUME = 1.0;   // volume "normale" della musica
+    const DUCK_VOLUME = 0.18;        // volume ridotto durante il messaggio di auguri
+    const DUCK_FADE_MS = 500;        // durata dell'abbassamento e del rialzo (ms)
+
+    let volumeRampTimer = null;      // timer della rampa di volume in corso
+    let activeAuguriCount = 0;       // quanti messaggi di auguri suonano contemporaneamente
+    let musicFinished = false;       // true quando il carosello è finito (musica in fade-out)
+
+    // Rampa lineare del volume della musica (unico punto che modifica music.volume)
+    function rampMusicVolume(target, duration = DUCK_FADE_MS, onComplete = null) {
+        if (volumeRampTimer) { clearInterval(volumeRampTimer); volumeRampTimer = null; }
+        const from = music.volume;
+        const steps = Math.max(1, Math.round(duration / 40));
+        let i = 0;
+        volumeRampTimer = setInterval(() => {
+            i++;
+            const k = i / steps;
+            music.volume = from + (target - from) * k;
+            if (i >= steps) {
+                clearInterval(volumeRampTimer);
+                volumeRampTimer = null;
+                music.volume = target;
+                if (onComplete) onComplete();
             }
-        }, stepTime);
+        }, duration / steps);
+    }
+
+    // Abbassa la musica per far sentire meglio il messaggio di auguri
+    function duckMusic() {
+        rampMusicVolume(DUCK_VOLUME, DUCK_FADE_MS);
+    }
+
+    // Rialza la musica a volume normale (solo se non ci sono altri auguri in corso)
+    function restoreMusic() {
+        if (activeAuguriCount > 0) return;
+        if (musicFinished) return;   // il carosello è finito: non rialzare la musica
+        rampMusicVolume(MUSIC_BASE_VOLUME, DUCK_FADE_MS);
+    }
+
+    function fadeOutMusic(duration = 5000) {
+        musicFinished = true;
+        rampMusicVolume(0, duration, () => {
+            music.pause();
+            music.currentTime = 0; // opzionale: resetta la traccia
+        });
     }
     
 </script>
